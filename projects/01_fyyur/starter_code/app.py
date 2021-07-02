@@ -14,7 +14,7 @@ from flask_wtf import Form
 from forms import *
 from flask_migrate import Migrate
 import datetime
-from datetime import datetime
+from datetime import datetime, date
 from sqlalchemy.orm import  joinedload
 
 today = datetime.now().strftime("%Y-%m-%dT%H:%M:%S.000Z")
@@ -81,7 +81,7 @@ class Show(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     artist_id = db.Column('artist_id', db.Integer, db.ForeignKey('Artist.id'))
     venue_id = db.Column('venue_id', db.Integer, db.ForeignKey('Venue.id'))
-    start_time = db.Column('start_time', db.DateTime, default=datetime.utcnow)
+    start_time = db.Column('start_time', db.String, default=today)
 
     def __repr__(self):
         return f"<Show {self.id} {self.start_time}>"
