@@ -36,57 +36,42 @@ def create_app(test_config=None):
   @app.route('/categories', methods=['GET'])
   def getCategories():
       try:
-          page = request.args.get('page', 1, type=int)
-          categories = Category.query.paginate(page, per_page=10)
-          formatted_categories = [category.format() for category in categories.items]
+          categories = Category.query.order_by(Category.id).all()
       except: 
           abort(422)
-
-      return jsonify({
-          'success': True,
-          'categories': formatted_categories,
-          'total_categories': categories.total
-      })
-
-  @app.route('/categories/<int:category_id>')
-  def getCatagory(category_id):
-      category = Category.query.get(category_id)      
-      if category is None:
+      if len(categories) == 0:
           abort(404)
-      
       return jsonify({
           'success': True,
-          'category': category.format(),
+          'categories': [category.format() for category in categories]
       })
 
-  @app.route('/questions', methods=['GET'])
-  def getQuestions():
+  def paginate_questions(request, selection):
+    page = request.args.get('page', 1, type=int)
+    start = (page - 1) * QUESTIONS_PER_PAGE
+    end = start + QUESTIONS_PER_PAGE
+    questions = [question.format() for question in selection]
+    current_questions = questions[start:end]
+
+    return current_questions
+
+  @app.route('/questions')
+  def get_questions():
       try:
-          question = request.args.get('question', 1, type=int)
-          questions = Question.query.paginate(question, per_page=10)
-          formatted_questions = [question.format() for question in questions.items]
-      except: 
+          selection = Question.query.order_by(Question.id).all()
+          current_questions = paginate_questions(request, selection)
+          categories = Category.query.order_by(Category.id).all()
+      except Exception:
           abort(422)
-
-      return jsonify({
-          'success': True,
-          'questions': formatted_questions,
-          'total_questions': questions.total
-      })
-
-  @app.route('/questions/<int:question_id>')
-  def getQuestion(question_id):
-      question = Question.query.get(question_id)
-      
-      if question is None:
+      if len(current_questions) == 0 or len(categories) == 0:
           abort(404)
-      
       return jsonify({
           'success': True,
-          'question': question.format(),
+          'questions': current_questions,
+          'totalQuestions': len(Question.query.all()),
+          'currentCategory': None,
+          'categories': [category.format() for category in categories]
       })
-
-
 
   @app.route('/questions/<int:question_id>', methods=['DELETE'])
   def deleteQuestion(question_id):
@@ -126,16 +111,19 @@ def create_app(test_config=None):
 
 
   @app.route('/questions/search', methods=['POST'])
-  def question_search():
+  def search_question():
       search_term = request.get_json()['searchTerm']
-      search_results = Question.query.filter(Question.question.ilike(f'%{search_term}%')).all()
-
+      try:
+          search_results = Question.query.filter(
+              Question.question.ilike(f'%{search_term}%')).all()
+      except Exception:
+          abort(500)
       return jsonify({
           'success': True,
           'questions': [question.format() for question in search_results],
           'totalQuestions': len(search_results),
           'currentCategory': None,
-      })
+      }) 
 
 
   @app.route('/categories/<int:category_id>/questions')
