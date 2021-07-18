@@ -1,17 +1,19 @@
 import os
-from flask import Flask, request, abort, jsonify, redirect, url_for
-from flask_sqlalchemy import sqlalchemy
+from flask import (Flask,
+                request,
+                abort,
+                jsonify,
+                redirect,
+                url_for)
 from sqlalchemy import func
 from flask_cors import CORS
-import random
-import sys 
 from flask_moment import Moment
 
 
 from models import setup_db, Question, Category, db
 
 QUESTIONS_PER_PAGE = 10
-
+# create and configure the app
 def create_app(test_config=None):
   app = Flask(__name__)
   moment = Moment(app)
@@ -19,7 +21,7 @@ def create_app(test_config=None):
   CORS(app)
 
 
-
+# CORS Headers
   @app.after_request
   def after_request(response):
       response.headers.add('Access-Control-Allow-Headers',
@@ -28,7 +30,6 @@ def create_app(test_config=None):
                           'GET,PUT,POST,DELETE,OPTIONS')
       return response
 
-  
   @app.route('/')
   def index():
       return redirect(url_for('getCategories'))
