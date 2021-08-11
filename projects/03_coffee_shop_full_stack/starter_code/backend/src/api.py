@@ -6,7 +6,7 @@ from flask import (Flask,
 from sqlalchemy import exc
 import json
 from flask_cors import CORS
-# from werkzeug.exceptions import HTTPException
+from werkzeug.exceptions import HTTPException
 from .database.models import db_drop_and_create_all, setup_db, Drink
 from .auth.auth import AuthError, requires_auth
 
@@ -31,7 +31,7 @@ db_drop_and_create_all()
     returns status code 200 and json {"success": True, "drinks": drinks} where drinks is the list of drinks
         or appropriate status code indicating reason for failure
 '''
-@app.route('/drinks')
+@app.route('/drinks', methods=['GET'])
 def get_drinks():
     drinks = list(map(Drink.short,Drink.query.all()))
     result = {"success": True, "drinks": drinks}
@@ -45,7 +45,7 @@ def get_drinks():
     returns status code 200 and json {"success": True, "drinks": drinks} where drinks is the list of drinks
         or appropriate status code indicating reason for failure
 '''
-@app.route('/drinks-detail')
+@app.route('/drinks-detail', methods=['GET'])
 @requires_auth('get:drinks-detail')
 def get_drinks_detail():
     drinks = list(map(Drink.long,Drink.query.all()))
@@ -62,7 +62,7 @@ def get_drinks_detail():
         or appropriate status code indicating reason for failure
 '''
 
-@app.route('/drinks', method=['POST'])
+@app.route('/drinks')
 @requires_auth('post:drinks')
 def post_drinks():
     drinks_data = request.get_json()
@@ -94,7 +94,7 @@ def post_drinks():
         or appropriate status code indicating reason for failure
 '''
 
-@app.route('/drinks/<id>', method=['PATCH'])
+@app.route('/drinks/<id>', methods=['PATCH'])
 @requires_auth('patch:drinks')
 def patch_drinks(token, drink_id):
     new_drink_data = request.get_json()
@@ -127,7 +127,7 @@ def patch_drinks(token, drink_id):
         or appropriate status code indicating reason for failure
 '''
 
-@app.route('/drinks/<id>', method=['DELETE'])
+@app.route('/drinks/<id>', methods=['DELETE'])
 @requires_auth('delete:drinks')
 def delete_drinks(token,drink_id):
     drink = Drink.query.get(drink_id)
@@ -185,8 +185,8 @@ def unprocessable(error):
 @app.errorhandler(Exception)
 def handle_error(e):
     code = 404
-    # if isinstance(e, HTTPException):
-    if isinstance(e):
+    if isinstance(e, HTTPException):
+    # if isinstance(e):
         code = e.code
     return jsonify(error=str(e)), code
 
