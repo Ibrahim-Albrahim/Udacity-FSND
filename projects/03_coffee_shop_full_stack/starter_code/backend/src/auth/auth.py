@@ -40,7 +40,7 @@ def get_token_auth_header():
     raise AuthError({
         'success': False,
         'message': 'JWT not found',
-        'error': 401
+        'error':    1
     }, 401)
 '''
 @TODO implement check_permissions(permission, payload) method
@@ -60,8 +60,8 @@ def check_permissions(permission, payload):
     raise AuthError({
         'success': False,
         'message': 'Permission not found in JWT',
-        'error': 401
-    }, 401)
+        'error': 403
+    }, 403)
 
 '''
 @TODO implement verify_decode_jwt(token) method
@@ -154,7 +154,7 @@ def requires_auth(permission=''):
             token = get_token_auth_header()
             payload = verify_decode_jwt(token)
             check_permissions(permission, payload)
-            return f(payload, *args, **kwargs)
+            return f(*args, **kwargs)
 
         return wrapper
     return requires_auth_decorator

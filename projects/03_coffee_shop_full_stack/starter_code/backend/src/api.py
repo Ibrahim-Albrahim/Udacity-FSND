@@ -9,6 +9,7 @@ from flask_cors import CORS
 from werkzeug.exceptions import HTTPException
 from .database.models import db_drop_and_create_all, setup_db, Drink
 from .auth.auth import AuthError, requires_auth
+import sys
 
 app = Flask(__name__)
 setup_db(app)
@@ -62,21 +63,22 @@ def get_drinks_detail():
         or appropriate status code indicating reason for failure
 '''
 
-@app.route('/drinks')
+@app.route('/drinks', methods=['POST'])
 @requires_auth('post:drinks')
 def post_drinks():
     drinks_data = request.get_json()
     try:
         drink = Drink(
-            title=drinks_data['titile'],
-            recipe=drinks_data['recipe'])
-        Drink.insert(drink)
+            title=drinks_data['title'],
+            recipe=json.dumps(drinks_data['recipe']))
+        drink.insert()
 
         drinks = list(map(Drink.long,Drink.query.all()))
         result = {"success": True, "drinks": drinks}
-        return jsonify(result)
+        return result
 
     except:
+        print(sys.exc_info())
         abort(500)
 
 
@@ -94,9 +96,9 @@ def post_drinks():
         or appropriate status code indicating reason for failure
 '''
 
-@app.route('/drinks/<id>', methods=['PATCH'])
+@app.route('/drinks/<int:drink_id>', methods=['PATCH'])
 @requires_auth('patch:drinks')
-def patch_drinks(token, drink_id):
+def patch_drinks(drink_id):
     new_drink_data = request.get_json()
     old_drink_data = Drink.query.get(drink_id)
     if old_drink_data is None:
@@ -105,15 +107,16 @@ def patch_drinks(token, drink_id):
     if 'title' in new_drink_data:
         setattr(old_drink_data, 'title', new_drink_data['title'])
     if 'recipe' in new_drink_data:
-        setattr(old_drink_data, 'recipe', new_drink_data['recipe'])
+        setattr(old_drink_data, 'recipe', json.dumps(new_drink_data['recipe']))
 
     try:
-        Drink.update(old_drink_data)
+        old_drink_data.update()
         drinks = list(map(Drink.long,Drink.query.all()))
         result = {"success": True, "drinks": drinks}
         return jsonify(result)
 
     except:
+        print(sys.exc_info)
         abort(500)
 
 '''
@@ -127,15 +130,15 @@ def patch_drinks(token, drink_id):
         or appropriate status code indicating reason for failure
 '''
 
-@app.route('/drinks/<id>', methods=['DELETE'])
+@app.route('/drinks/<int:drink_id>', methods=['DELETE'])
 @requires_auth('delete:drinks')
-def delete_drinks(token,drink_id):
+def delete_drinks(drink_id):
     drink = Drink.query.get(drink_id)
     if drink is None:
         abort(404)
     
     try:
-        Drink.delete(drink)
+        drink.delete()
 
         drinks = list(map(Drink.long,Drink.query.all()))
         result = {"success": True, "drinks": drinks}
