@@ -1,0 +1,18 @@
+{% extends 'main.html' %}
+{% block content %}
+<form method="POST" action="/photo/create" enctype="multipart/form-data">
+    <div class="form-input">
+        <label> Gallery Id: </label>
+        <input type="number" name="gallery" />
+    </div>
+    <div class="form-input">
+        <label> select your Photo: </label>
+        <input type=file name=inputFile>
+    </div>
+    <button type="submit" class="btn cold float-right"> Add + </button>
+</form>
+{% endblock %}
+
+
+
+

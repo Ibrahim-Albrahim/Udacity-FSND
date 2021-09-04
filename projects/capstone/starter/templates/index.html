@@ -1,0 +1,28 @@
+{% extends 'main.html' %}
+{% block content %}
+<div class="banner">
+    <h1> 
+        MyGallery
+    </h1>
+    <div>
+        <a class="btn cold" href="/add-gallery"> Add Gallery </a>
+        <br>
+        <br>
+        <a class="btn cold" href="/add-photo"> Add Photo </a>
+    </div>
+</div>
+<ul>
+    {%for gallery in galleries %}
+    <li>
+        <img class="gallery-img" src="data:;base64,{{ gallery.rendered_data }}" alt="">
+        <br>
+        <div class="gallery-title">
+            <h3> 
+                {{ gallery.title }}
+            </h3>
+            <button class="btn danger"> Delete </button>
+        </div>
+    </li>
+    {% endfor %}
+</ul>
+{% endblock %}

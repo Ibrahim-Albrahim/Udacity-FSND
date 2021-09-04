@@ -1,0 +1,27 @@
+{% extends 'main.html' %}
+{% block content %}
+<ul>
+    {%for photo in photos %}
+    <li>
+        <img class="gallery-img" src="data:;base64,{{ photo.rendered_data }}" alt="">
+        <div class="photo-actions">
+            <button class="btn danger"> Delete </button>
+        </div>
+    </li>
+    {% endfor %}
+</ul>
+{% endblock %}
+
+
+{%for gallery in galleries %}
+<li>
+    <img class="gallery-img" src="data:;base64,{{ gallery.rendered_data }}" alt="">
+    <br>
+    <div class="gallery-title">
+        <h3> 
+            {{ gallery.title }}
+        </h3>
+        <button class="btn danger"> Delete </button>
+    </div>
+</li>
+{% endfor %}
