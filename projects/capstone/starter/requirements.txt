@@ -20,6 +20,7 @@ Flask-Migrate==3.0.1
 Flask-Moment==1.0.1
 Flask-RESTful==0.3.9
 Flask-SQLAlchemy==2.5.1
+Flask-Uploads==0.2.1
 Flask-WTF==0.15.1
 greenlet==1.1.0
 gunicorn==20.0.4
@@ -63,6 +64,6 @@ typed-ast==1.4.2
 virtualenv==20.4.7
 virtualenvwrapper-win==1.2.6
 wcwidth==0.2.5
-Werkzeug==2.0.1
+Werkzeug==0.16.1
 wrapt==1.11.1
 WTForms==2.3.3
