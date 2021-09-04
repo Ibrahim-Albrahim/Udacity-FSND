@@ -55,7 +55,7 @@ def create_gallery():
    render_file = render_picture(data)
    title = request.form['title']
 
-   newFile = Photo(name=file.filename, data=data, rendered_data=render_file, title=title)
+   newFile = Gallery(name=file.filename, data=data, rendered_data=render_file, title=title)
    try:
     db.session.add(newFile)
     db.session.commit() 
@@ -68,9 +68,37 @@ def create_gallery():
 
    return redirect(url_for('index')) 
         
+@app.route('/gallery/<gallery_id>/edit', methods=['PATCH','GET'])
+def edit_gallery(gallery_id):
+    gallery = Gallery.query.get(gallery_id)
+    return render_template('edit-gallery.html', gallery=gallery)
 
 
-@app.route('/gallery/<gallery_id>/delete', methods=['DELETE'])
+@app.route('/gallery/<gallery_id>/edit', methods=['PATCH','POST'])
+def edit_gallery_submission(gallery_id):
+    gallery = Gallery.query.get(gallery_id)
+    gallery.title = request.form['title']
+    
+    if not gallery:
+        return redirect(url_for('index'))
+    else:
+        error_on_delete = False
+        gallery_title = gallery.title
+        try:
+            db.session.commit()
+        except:
+            error_on_delete = True
+            db.session.rollback()
+        finally:
+            db.session.close()
+        if error_on_delete:
+            flash(f'An error occurred editing gallery {gallery_title}.')
+            print("Error in edit_gallery()")
+            abort(500)
+        else:
+            return redirect(url_for('index')) 
+
+@app.route('/gallery/<gallery_id>/delete', methods=['DELETE','GET'])
 def delete_gallery(gallery_id):
     gallery = Gallery.query.get(gallery_id)
     if not gallery:
@@ -91,10 +119,8 @@ def delete_gallery(gallery_id):
             print("Error in delete_gallery()")
             abort(500)
         else:
-            return jsonify({
-                'deleted': True,
-                'url': url_for('gallery')
-            })
+            return redirect(url_for('index')) 
+
 
 
 @app.route('/photos', methods=['GET'])

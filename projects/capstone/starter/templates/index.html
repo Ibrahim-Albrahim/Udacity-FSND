@@ -20,7 +20,8 @@
             <h3> 
                 {{ gallery.title }}
             </h3>
-            <button class="btn danger"> Delete </button>
+            <a href="/gallery/{{ gallery.id }}/delete"><button class="btn danger">Delete</button></a>
+            <a href="/gallery/{{ gallery.id }}/edit"><button class="btn edit">Edit</button></a>
         </div>
     </li>
     {% endfor %}
