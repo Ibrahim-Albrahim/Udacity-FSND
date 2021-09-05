@@ -1,8 +1,12 @@
+from re import T
 from flask import Flask
 from flask_moment import Moment
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
+from sqlalchemy import Table, Column, Integer, ForeignKey
+from sqlalchemy.orm import backref, relationship
+from sqlalchemy.ext.declarative import declarative_base
 
 
 
@@ -32,7 +36,8 @@ class Gallery(db.Model):
     name = db.Column(db.String(128), nullable=False)
     data = db.Column(db.LargeBinary, nullable=False) #Actual data, needed for Download
     rendered_data = db.Column(db.Text, nullable=False)#Data to render the pic in browser
-    photo_id = db.Column(db.Integer, db.ForeignKey('Photo.id'), nullable=True)
+    photos = relationship("Photo", back_populates="gallery")
+
 
     def __repr__(self):
         return f'Gallery Id: {self.id} Gallery Name: {self.title} Thumnail: {self.rendered_data}'
@@ -45,8 +50,10 @@ class Photo(db.Model):
     name = db.Column(db.String(128), nullable=False)
     data = db.Column(db.LargeBinary, nullable=False) #Actual data, needed for Download
     rendered_data = db.Column(db.Text, nullable=False)#Data to render the pic in browser
-    gallery = db.relationship('Gallery', backref='photo', lazy=True)
+    gallery_id = db.Column(Integer, ForeignKey('Gallery.id'))
+    gallery = relationship("Gallery", back_populates="photos")
 
     def __repr__(self):
-        return f'Photo Id: {self.id} Pic Name: {self.name} Photo: {self.rendered_data} Gallery: {self.gallery}'
+        return f'Photo Id: {self.id} Pic Name: {self.name} Photo: {self.rendered_data} Gallery: {self.gallery} '
+
 

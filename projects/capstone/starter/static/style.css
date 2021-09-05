@@ -59,7 +59,7 @@ a {
     background-color: #677565;
 }
 
-.danger {
+.delete {
     background-color: #A88B99;
 }
 
@@ -67,6 +67,9 @@ a {
     background-color: #558a5e;
 }
 
+.view {
+    background-color: #59558a;
+}
 
 .cold {
     background-color: #596C7F;

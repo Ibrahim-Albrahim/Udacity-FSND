@@ -1,13 +1,17 @@
 import os
-from flask import Flask, render_template, request, Response, flash, redirect, url_for, abort, jsonify
+from flask import (Flask,
+                render_template,
+                request,
+                flash,
+                redirect,
+                url_for,
+                abort,
+                jsonify)
 from flask_cors import CORS
 from models import Photo,Gallery, setup_db, db
 from flask_moment import Moment
-from werkzeug.utils import secure_filename
-
-from base64 import b64encode
+from auth.auth import AuthError, requires_auth
 import base64
-from io import BytesIO #Converts data from Database into bytes
 
 
 
@@ -28,17 +32,16 @@ def render_picture(data):
 def index():
     return render_template('index.html', galleries=Gallery.query.all())
 
-@app.route('/galleries/<gallery_id>' , methods=['GET'])
+@app.route('/<gallery_id>' , methods=['GET'])
+@requires_auth('get:photos')
 def show_gallery(gallery_id):
-#   gallery = Gallery.query(Gallery).get(gallery_id)
-#   photos = Photo.query(Photo).get(gallery_id)
-  photos = db.session.query(Photo.id, Photo.rendered_data).join(Gallery,Gallery.photo_id==Photo.id).filter(Gallery.photo_id==Photo.id).all()
+  gallery = Gallery.query.get(gallery_id)
   data = []
-
-  for photo in photos:
-    data.append({
-      "photo_id": photo.id,
-      "photo_rendered_data": photo.rendered_data
+  for photo in gallery.photos:
+    gallery = Gallery.query.get(photo.gallery_id)
+    data.append ({
+        'id': photo.id,
+        'rendered_data': photo.rendered_data,
     })
 
   return render_template('gallery.html',photosdata=data)
@@ -49,6 +52,7 @@ def addGallery():
 
 
 @app.route('/gallery/create', methods=['POST'])
+@requires_auth('post:galleries')
 def create_gallery():
    file = request.files['inputFile']
    data = file.read()
@@ -68,13 +72,15 @@ def create_gallery():
 
    return redirect(url_for('index')) 
         
-@app.route('/gallery/<gallery_id>/edit', methods=['PATCH','GET'])
+@app.route('/<gallery_id>/edit', methods=['PATCH','GET'])
+@requires_auth('patch:galleries')
 def edit_gallery(gallery_id):
     gallery = Gallery.query.get(gallery_id)
     return render_template('edit-gallery.html', gallery=gallery)
 
 
-@app.route('/gallery/<gallery_id>/edit', methods=['PATCH','POST'])
+@app.route('/<gallery_id>/edit', methods=['PATCH','POST'])
+@requires_auth('patch:galleries')
 def edit_gallery_submission(gallery_id):
     gallery = Gallery.query.get(gallery_id)
     gallery.title = request.form['title']
@@ -99,6 +105,7 @@ def edit_gallery_submission(gallery_id):
             return redirect(url_for('index')) 
 
 @app.route('/gallery/<gallery_id>/delete', methods=['DELETE','GET'])
+@requires_auth('delete:galleries')
 def delete_gallery(gallery_id):
     gallery = Gallery.query.get(gallery_id)
     if not gallery:
@@ -118,37 +125,22 @@ def delete_gallery(gallery_id):
             flash(f'An error occurred deleting gallery {gallery_title}.')
             print("Error in delete_gallery()")
             abort(500)
-        else:
-            return redirect(url_for('index')) 
 
-
-
-@app.route('/photos', methods=['GET'])
-def photos():
-    data = []
-    photos = Photo.query.all()
-    
-    for photo in photos:
-        data.append({
-            "photo_id": photo.id,
-            "photo_title": photo.title,
-            "gallery_thum": photo.thum,
-        })
-
-    return render_template('photos.html', photos=data)
 
 @app.route('/add-photo')
+@requires_auth('post:photos')
 def addPhoto():
   return render_template('add-photo.html')
 
 @app.route('/photo/create', methods=['POST'])
+@requires_auth('post:photos')
 def create_photo():
    file = request.files['inputFile']
    data = file.read()
    render_file = render_picture(data)
-   gallery = request.form['gallery']
+   gallery_id = int(request.form['gallery'])
 
-   newFile = Photo(name=file.filename, data=data, rendered_data=render_file, gallery=gallery)
+   newFile = Photo(name=file.filename, data=data, rendered_data=render_file, gallery_id=gallery_id)
 
    try:
     db.session.add(newFile)
@@ -165,14 +157,14 @@ def create_photo():
    return redirect(url_for('index')) 
 
 
-@app.route('/photo/<photo_id>/delete', methods=['GET'])
+@app.route('/photo/<photo_id>/delete', methods=['DELETE','GET'])
+@requires_auth('delete:photos')
 def delete_photo(photo_id):
     photo = Photo.query.get(photo_id)
     if not photo:
         return redirect(url_for('index'))
     else:
         error_on_delete = False
-        photo_title = photo.title
         try:
             db.session.delete(photo)
             db.session.commit()
@@ -182,15 +174,16 @@ def delete_photo(photo_id):
         finally:
             db.session.close()
         if error_on_delete:
-            flash(f'An error occurred deleting venue {photo_title}.')
-            print("Error in delete_gallery()")
+            flash(f'An error occurred deleting photo {photo_id}.')
+            print("Error in delete_photo()")
             abort(500)
         else:
-            return jsonify({
-                'deleted': True,
-                'url': url_for('photo')
-            })
+            return redirect(url_for('index')) 
 
+
+@app.errorhandler(AuthError)
+def auth_error(e):
+    return jsonify(e.error), e.status_code
 
 
 if __name__ == '__main__':
