@@ -27,6 +27,7 @@ def setup_db(app):
     Migrate(app, db)
     db.init_app(app)
     db.create_all()
+    
 
 
 class Gallery(db.Model):

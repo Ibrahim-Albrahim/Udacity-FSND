@@ -5,16 +5,39 @@ from flask import (Flask,
                 flash,
                 redirect,
                 url_for,
+                session,
                 abort,
-                jsonify)
-from flask_cors import CORS
+                jsonify,
+                _request_ctx_stack)
+from flask_cors import CORS, cross_origin
 from models import Photo,Gallery, setup_db, db
 from flask_moment import Moment
-from auth.auth import AuthError, requires_auth
+from auth import AuthError, requires_auth
 import base64
+from authlib.integrations.flask_client import OAuth
+from jose import jwt
+from functools import wraps
+import json
+from urllib.request import urlopen
+from dotenv import load_dotenv, find_dotenv
+from os import environ as env
+from werkzeug.exceptions import HTTPException
+import constants
+
+from six.moves.urllib.parse import urlencode
 
 
+ENV_FILE = find_dotenv()
+if ENV_FILE:
+    load_dotenv(ENV_FILE)
 
+AUTH0_CALLBACK_URL = env.get(constants.AUTH0_CALLBACK_URL)
+AUTH0_CLIENT_ID = env.get(constants.AUTH0_CLIENT_ID)
+AUTH0_CLIENT_SECRET = env.get(constants.AUTH0_CLIENT_SECRET)
+AUTH0_DOMAIN = env.get(constants.AUTH0_DOMAIN)
+AUTH0_BASE_URL = 'https://' + AUTH0_DOMAIN
+AUTH0_AUDIENCE = env.get(constants.AUTH0_AUDIENCE)
+    
 app = Flask(__name__)
 moment = Moment(app)
 
@@ -22,12 +45,45 @@ setup_db(app)
 app.secret_key = os.urandom(32)
 CORS(app)
 
+@app.errorhandler(Exception)
+def handle_auth_error(ex):
+    response = jsonify(message=str(ex))
+    response.status_code = (ex.code if isinstance(ex, HTTPException) else 500)
+    return response
+
+oauth = OAuth(app)
+
+auth0 = oauth.register(
+    'auth0',
+    client_id=AUTH0_CLIENT_ID,
+    client_secret=AUTH0_CLIENT_SECRET,
+    api_base_url=AUTH0_BASE_URL,
+    access_token_url=AUTH0_BASE_URL + '/oauth/token',
+    authorize_url=AUTH0_BASE_URL + '/authorize',
+    client_kwargs={
+        'scope': 'openid profile email',
+    },
+)
+
+
+
 def render_picture(data):
 
     render_pic = base64.b64encode(data).decode('ascii') 
     return render_pic
 
+@app.route('/login')
+def login():
+    return auth0.authorize_redirect(redirect_uri=AUTH0_CALLBACK_URL, audience=AUTH0_AUDIENCE)
 
+@app.route('/user')
+@requires_auth
+def dashboard():
+    return render_template('dashboard.html',
+                           userinfo=session['profile'],
+                           userinfo_pretty=json.dumps(session['jwt_payload'], indent=4))
+
+    
 @app.route('/', methods=['GET'])
 def index():
     return render_template('index.html', galleries=Gallery.query.all())
@@ -47,6 +103,7 @@ def show_gallery(gallery_id):
   return render_template('gallery.html',photosdata=data)
     
 @app.route('/add-gallery')
+@requires_auth('post:galleries')
 def addGallery():
   return render_template('add-gallery.html')
 
@@ -181,9 +238,6 @@ def delete_photo(photo_id):
             return redirect(url_for('index')) 
 
 
-@app.errorhandler(AuthError)
-def auth_error(e):
-    return jsonify(e.error), e.status_code
 
 
 if __name__ == '__main__':
