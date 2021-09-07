@@ -27,13 +27,10 @@ ALGORITHMS = ['RS256']
 API_AUDIENCE = 'https://ahhsn.com/apps/gallery'
 
 
-
 class AuthError(Exception):
     def __init__(self, error, status_code):
         self.error = error
         self.status_code = status_code
-
-
 
 
 def get_token_auth_header():
@@ -64,6 +61,7 @@ def get_token_auth_header():
     token = parts[1]
     return token
 
+    
 def check_permissions(permission, payload):
     if "permissions" in payload:
         if permission in payload['permissions']:
