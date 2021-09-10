@@ -1,1 +1,6 @@
+AUTH0_CLIENT_ID MmNs6MBDNzbOIOCg2zt1oJozWSK3fDE
+AUTH0_DOMAIN dev-kcyr46o1.us.auth0.com
+AUTH0_CLIENT_SECRET jN5OZRHOMCLKftuzwSgBSrT_c7KM-eF-dIwL36cz5gOLppgrHufl_ugSk2QljHPS
+AUTH0_CALLBACK_URL http://localhost:5000
+AUTH0_AUDIENCE https://ahhsn.com/apps/gallery
 

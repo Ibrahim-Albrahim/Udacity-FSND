@@ -1,31 +1,23 @@
-import os
-from flask import (Flask,
-                render_template,
-                request,
-                flash,
-                redirect,
-                url_for,
-                session,
-                abort,
-                jsonify,
-                _request_ctx_stack)
-from flask_moment import Moment
-import base64
-from authlib.integrations.flask_client import OAuth
-from jose import jwt
-from functools import wraps
 import json
+from flask import request
+from functools import wraps
+from jose import jwt
 from urllib.request import urlopen
-from dotenv import load_dotenv, find_dotenv
 from os import environ as env
-from werkzeug.exceptions import HTTPException
+import constants
+from dotenv import load_dotenv, find_dotenv
 
-from six.moves.urllib.parse import urlencode
+ENV_FILE = find_dotenv()
+if ENV_FILE:
+    load_dotenv(ENV_FILE)
 
-AUTH0_DOMAIN = 'dev-kcyr46o1.us.auth0.com'
-ALGORITHMS = ['RS256']
-API_AUDIENCE = 'https://ahhsn.com/apps/gallery'
-
+AUTH0_CALLBACK_URL = env.get(constants.AUTH0_CALLBACK_URL)
+AUTH0_CLIENT_ID = env.get(constants.AUTH0_CLIENT_ID)
+AUTH0_CLIENT_SECRET = env.get(constants.AUTH0_CLIENT_SECRET)
+AUTH0_DOMAIN = env.get(constants.AUTH0_DOMAIN)
+AUTH0_BASE_URL = 'https://' + AUTH0_DOMAIN
+API_AUDIENCE = env.get(constants.AUTH0_AUDIENCE)
+ALGORITHMS = env.get(constants.ALGORITHMS)
 
 class AuthError(Exception):
     def __init__(self, error, status_code):
@@ -34,34 +26,19 @@ class AuthError(Exception):
 
 
 def get_token_auth_header():
-    """Obtains the Access Token from the Authorization Header
-    """
-    auth = request.headers.get("Authorization", None)
-    if not auth:
-        raise AuthError({"code": "authorization_header_missing",
-                        "description":
-                            "Authorization header is expected"}, 401)
+    if "Authorization" in request.headers:
+        auth_header = request.headers["Authorization"]
+        if auth_header:
+            bearer_token_array = auth_header.split(' ')
+            if bearer_token_array[0] and bearer_token_array[0].lower() == "bearer" and bearer_token_array[1]:
+                return bearer_token_array[1]
+    raise AuthError({
+        'success': False,
+        'message': 'JWT not found',
+        'error':    1
+    }, 401)
 
-    parts = auth.split()
 
-    if parts[0].lower() != "bearer":
-        raise AuthError({"code": "invalid_header",
-                        "description":
-                            "Authorization header must start with"
-                            " Bearer"}, 401)
-    elif len(parts) == 1:
-        raise AuthError({"code": "invalid_header",
-                        "description": "Token not found"}, 401)
-    elif len(parts) > 2:
-        raise AuthError({"code": "invalid_header",
-                        "description":
-                            "Authorization header must be"
-                            " Bearer token"}, 401)
-
-    token = parts[1]
-    return token
-
-    
 def check_permissions(permission, payload):
     if "permissions" in payload:
         if permission in payload['permissions']:
